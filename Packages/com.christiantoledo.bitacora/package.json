@@ -1,0 +1,23 @@
+{
+  "name": "com.christiantoledo.bitacora",
+  "version": "0.1.0",
+  "displayName": "Bitácora",
+  "description": "Registro de sesiones y eventos de telemetría para simulaciones en Unity, con envío por lotes a una API REST.",
+  "unity": "6000.3",
+  "license": "MIT",
+  "author": {
+    "name": "Christian Ariel Toledo",
+    "url": "https://christiantoledo-dev.netlify.app"
+  },
+  "dependencies": {
+    "com.unity.ugui": "2.0.0",
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "samples": [
+    {
+      "displayName": "Template",
+      "description": "Escenas SampleHome y SampleSimulation con eventos de prueba y backend simulado.",
+      "path": "Samples~/Template"
+    }
+  ]
+}
