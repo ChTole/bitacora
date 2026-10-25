@@ -32,9 +32,11 @@ El final `#v0.1.0` fija la versión. Sin él se instala la última versión del 
 
 ## Primeros pasos
 
-1. En el Package Manager, seleccionar **Bitácora**, pestaña **Samples**, y presionar **Import** en **Template**.
-2. Agregar las escenas `SampleHome` y `SampleSimulation` a **File → Build Profiles → Scene List**, con `SampleHome` primero.
-3. Abrir `SampleHome` y presionar Play.
+1. Si el proyecto todavía no usa TextMeshPro, importar sus recursos:
+   **Window → TextMeshPro → Import TMP Essential Resources**.
+2. En el Package Manager, seleccionar **Bitácora**, pestaña **Samples**, y presionar **Import** en **Template**.
+3. Agregar las escenas `SampleHome` y `SampleSimulation` a **File → Build Profiles → Scene List**, con `SampleHome` primero.
+4. Abrir `SampleHome` y presionar Play.
 
 La plantilla usa el backend simulado: funciona sin servidor y muestra en la consola todo lo que se enviaría.
 
