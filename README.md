@@ -25,10 +25,10 @@ Está pensado como punto de partida: incluye dos escenas de ejemplo y los compon
 En Unity: **Window → Package Manager → + → Install package from git URL** y pegar:
 
 ```
-https://github.com/ChTole/bitacora.git?path=/Packages/com.christiantoledo.bitacora#v0.1.0
+https://github.com/ChTole/bitacora.git?path=/Packages/com.christiantoledo.bitacora#v0.2.0
 ```
 
-El final `#v0.1.0` fija la versión. Sin él se instala la última versión del repositorio.
+El final `#v0.2.0` fija la versión. Sin él se instala la última versión del repositorio.
 
 ## Primeros pasos
 
@@ -112,11 +112,11 @@ Los componentes del núcleo se agrupan en el objeto `Bitacora`, que debe estar e
 
 ## Contrato con el servidor
 
-El formato de sesiones, eventos y errores se documenta en [`API.md`](Packages/com.christiantoledo.bitacora/Documentation~/API.md).
+El formato de sesiones, eventos y errores se documenta en [`API.md`](Packages/com.christiantoledo.bitacora/Documentation~/API.md), que va por la versión 1.1. Incluye los límites que aplica el servidor: hasta 100 eventos por lote y 2000 por sesión.
 
 ## Servidor de prueba
 
-La carpeta [`test-server/`](test-server/) contiene un servidor local en Flask que implementa el contrato, para probar el backend real sin un servidor de producción. Permite simular fallas y demoras. Ver su [README](test-server/README.md).
+La carpeta [`test-server/`](test-server/) contiene un servidor local en Flask que implementa el contrato, para probar el backend real sin un servidor de producción. Permite simular fallas y demoras, y bajar el límite de eventos por sesión para probar qué pasa al alcanzarlo. Ver su [README](test-server/README.md).
 
 ## Limitaciones conocidas
 
@@ -132,6 +132,7 @@ Assets/Samples/Template/                 # Escenas de ejemplo durante el desarro
 Packages/
 └── com.christiantoledo.bitacora/        # El package
     ├── package.json
+    ├── CHANGELOG.md                     # Historial de cambios
     ├── Runtime/                         # Código del package
     ├── Samples~/Template/               # Escenas de ejemplo que se distribuyen
     └── Documentation~/API.md            # Contrato con el servidor
@@ -141,7 +142,7 @@ ProjectSettings/
 
 ## Estado
 
-Versión 0.1.0: flujo completo con backend simulado y real.
+Versión 0.2.0: flujo completo con backend simulado y real, y contrato 1.1 con límite de eventos por sesión. Los cambios de cada versión están en el [historial de cambios](Packages/com.christiantoledo.bitacora/CHANGELOG.md).
 
 Próximamente:
 

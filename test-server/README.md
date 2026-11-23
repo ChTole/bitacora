@@ -1,6 +1,6 @@
 # Servidor de prueba
 
-Servidor local que implementa el [contrato de Bitácora](../Packages/com.christiantoledo.bitacora/Documentation~/API.md) para probar `HttpBackend` sin un backend real. Guarda cada sesión, con sus eventos, en un archivo JSON dentro de `data/sessions/`.
+Servidor local que implementa la versión 1.1 del [contrato de Bitácora](../Packages/com.christiantoledo.bitacora/Documentation~/API.md) para probar `HttpBackend` sin un backend real. Guarda cada sesión, con sus eventos, en un archivo JSON dentro de `data/sessions/`.
 
 > Es una herramienta de desarrollo, no un servidor de producción.
 
@@ -39,12 +39,22 @@ Se configuran con variables de entorno al iniciar:
 | `BITACORA_FAIL_RATE` | `0` | Proporción de solicitudes que fallan a propósito, de 0 a 1 |
 | `BITACORA_LATENCY` | `0` | Demora agregada a cada respuesta, en segundos |
 | `BITACORA_ORIGINS` | `*` | Orígenes permitidos por CORS |
+| `BITACORA_MAX_SESSION_EVENTS` | `2000` | Límite de eventos por sesión. El contrato fija 2000; un valor menor sirve para probar `session_full` |
+| `BITACORA_DATA_DIR` | `data/` | Carpeta donde se guardan las sesiones |
 
 Ejemplo, para probar los reintentos con un 30 % de fallas:
 
 ```bash
 BITACORA_FAIL_RATE=0.3 python app.py
 ```
+
+Ejemplo, para probar el límite de eventos por sesión:
+
+```bash
+BITACORA_MAX_SESSION_EVENTS=5 python app.py
+```
+
+Con este límite, a partir del sexto evento el servidor los descarta: un lote que no entra completo recibe `200` con los sobrantes contados en `discarded`, y los lotes siguientes reciben `409 session_full`. En la consola de Unity, el primer caso aparece como advertencia y el segundo como error ("Se descartan N eventos").
 
 ## Prueba rápida
 
