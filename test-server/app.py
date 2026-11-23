@@ -1,8 +1,8 @@
 """
 Servidor de prueba de Bitácora.
 
-Implementa el contrato definido en Packages/com.christiantoledo.bitacora/Documentation~/API.md
-para probar HttpBackend en local. Guarda cada sesión en un archivo JSON dentro de data/.
+Implementa la versión 1.1 del contrato definido en
+Packages/com.christiantoledo.bitacora/Documentation~/API.md para probar HttpBackend en local. Guarda cada sesión en un archivo JSON dentro de data/.
 
 No es un servidor de producción: no usa base de datos ni está pensado para muchos usuarios.
 """
@@ -30,6 +30,8 @@ FAIL_RATE = float(os.environ.get("BITACORA_FAIL_RATE", "0"))      # 0 a 1
 LATENCY = float(os.environ.get("BITACORA_LATENCY", "0"))          # segundos
 ORIGINS = os.environ.get("BITACORA_ORIGINS", "*")                 # CORS
 DATA_DIR = Path(os.environ.get("BITACORA_DATA_DIR", Path(__file__).parent / "data"))
+# Límite de eventos por sesión. El contrato fija 2000; un valor menor sirve para probar session_full.
+MAX_SESSION_EVENTS = int(os.environ.get("BITACORA_MAX_SESSION_EVENTS", "2000"))
 
 # --- Reglas del contrato -------------------------------------------------------
 
@@ -220,29 +222,47 @@ def add_events(session_id):
         if session["status"] != "active":
             return error(409, "session_finished", "La sesión ya fue cerrada.")
 
+        # Duplicados: sequence ya registrado en la sesión o repetido dentro del lote
         known = {e["sequence"] for e in session["events"]}
-        accepted = 0
+        new_events = []
         duplicates = 0
-
         for event in events:
             if event["sequence"] in known:
                 duplicates += 1
                 continue
             known.add(event["sequence"])
+            new_events.append(event)
+
+        # Límite por sesión: se aceptan los de menor sequence hasta completar el espacio
+        room = max(0, MAX_SESSION_EVENTS - len(session["events"]))
+        if new_events and room == 0:
+            return error(409, "session_full",
+                         f"La sesión alcanzó el límite de {MAX_SESSION_EVENTS} eventos.")
+
+        new_events.sort(key=lambda e: e["sequence"])
+        to_store = new_events[:room]
+        discarded = len(new_events) - len(to_store)
+
+        received_at = now_iso()
+        for event in to_store:
             session["events"].append({
                 "sequence": event["sequence"],
                 "timestamp": event["timestamp"],
                 "type": event["type"],
                 "data": event.get("data"),
-                "received_at": now_iso(),
+                "received_at": received_at,
             })
-            accepted += 1
 
-        session["events"].sort(key=lambda e: e["sequence"])
-        save_session(session)
+        if to_store:
+            session["events"].sort(key=lambda e: e["sequence"])
+            save_session(session)
 
-    app.logger.info("Sesión %s: %d eventos aceptados, %d duplicados", session_id, accepted, duplicates)
-    return jsonify({"accepted": accepted, "duplicates": duplicates})
+    accepted = len(to_store)
+    app.logger.info("Sesión %s: %d eventos aceptados, %d duplicados, %d descartados",
+                    session_id, accepted, duplicates, discarded)
+    if discarded:
+        app.logger.warning("Sesión %s llena: se descartaron %d eventos", session_id, discarded)
+    return jsonify({"accepted": accepted, "duplicates": duplicates, "discarded": discarded})
 
 
 def validate_event(event):

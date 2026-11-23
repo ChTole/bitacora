@@ -1,6 +1,6 @@
 {
   "name": "com.christiantoledo.bitacora",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Bitácora",
   "description": "Registro de sesiones y eventos de telemetría para simulaciones en Unity, con envío por lotes a una API REST.",
   "unity": "6000.3",

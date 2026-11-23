@@ -89,9 +89,13 @@ namespace Bitacora
                 switch (response.Status)
                 {
                     case 200:
+                        WarnIfDiscarded(response, count);
                         continue;
 
-                    case 409: // Sesión cerrada: los eventos ya no pueden registrarse
+                    // 409, cualquiera sea el code: session_finished (sesión cerrada)
+                    // o session_full (límite de eventos por sesión). En ambos casos los eventos
+                    // ya no pueden registrarse, y API.md indica descartarlos.
+                    case 409:
                     case 400: // Datos inválidos: reenviarlos no cambia el resultado
                     case 401: // Clave incorrecta: es un error de configuración
                     case 404: // La sesión no existe
@@ -164,6 +168,30 @@ namespace Bitacora
         }
 
         // --- Errores ----------------------------------------------------------------------
+
+        private sealed class EventsResult
+        {
+            [JsonProperty("discarded")] public int Discarded { get; set; } // Desde la versión 1.1 del contrato
+        }
+
+        /// <summary>
+        /// Avisa si el servidor descartó eventos porque la sesión alcanzó su límite.
+        /// Un servidor de la versión 1 no envía discarded, y se toma como 0.
+        /// </summary>
+        private static void WarnIfDiscarded(Response response, int batchCount)
+        {
+            try
+            {
+                int discarded = JsonConvert.DeserializeObject<EventsResult>(response.Text ?? "")?.Discarded ?? 0;
+                if (discarded > 0)
+                    Debug.LogWarning($"[{nameof(HttpBackend)}] La sesión alcanzó el límite de eventos: " +
+                                     $"el servidor descartó {discarded} de {batchCount}.");
+            }
+            catch (JsonException)
+            {
+                // La respuesta no trae el detalle; el lote igual se considera enviado
+            }
+        }
 
         private sealed class ErrorEnvelope
         {

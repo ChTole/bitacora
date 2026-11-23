@@ -2,7 +2,7 @@
 
 Este documento define cómo se comunica Bitácora con un servidor. Cualquier servidor que lo respete puede recibir la telemetría de una simulación: el servidor de prueba incluido en el repositorio, o un backend propio.
 
-**Versión del contrato:** 1
+**Versión del contrato:** 1.1 (ver [Historial de cambios](#historial-de-cambios))
 
 ## Convenciones
 
@@ -121,15 +121,19 @@ POST /v1/sessions/{session_id}/events
 | `type` | Texto en `snake_case`, hasta 64 caracteres. |
 | `data` | Objeto JSON o `null`, hasta 4 KB. Su contenido depende de cada simulación. |
 
-Un lote admite hasta 100 eventos.
+Un lote admite hasta 100 eventos, y una sesión hasta 2000 (ver [Límites](#límites)).
 
 **Respuesta `200`**
 
 ```json
-{ "accepted": 2, "duplicates": 0 }
+{ "accepted": 2, "duplicates": 0, "discarded": 0 }
 ```
 
 **Duplicados.** Si llega un evento con un `sequence` ya registrado en la sesión, el servidor lo ignora y lo cuenta en `duplicates`, sin devolver error. Esto permite que el cliente reenvíe un lote completo si no recibió la respuesta, sin generar datos repetidos.
+
+**Sesión llena.** Si un lote supera el espacio que le queda a la sesión, el servidor acepta los eventos de menor `sequence` hasta completar el límite, descarta el resto y los cuenta en `discarded`. A partir de ahí, un lote con eventos nuevos recibe `409 session_full`; un lote que solo trae duplicados recibe `200`, para que el reenvío siga siendo seguro. La sesión sigue abierta: el cliente la cierra normalmente.
+
+`discarded` se agregó en la versión 1.1 del contrato. Los clientes que no lo usan pueden ignorarlo.
 
 ### Cerrar una sesión
 
@@ -178,6 +182,17 @@ El servidor asigna a cada sesión un alias legible, formado por un animal y un a
 - Los adjetivos y colores no cambian con el género del animal (turquesa, veloz, valiente), para que cualquier combinación sea correcta.
 - El servidor evita repetir un alias entre las sesiones recientes. Si las combinaciones se agotan, puede agregar un número: "Carpincho Turquesa 27".
 
+## Límites
+
+| Límite | Valor | Si se supera |
+|---|---|---|
+| Largo de `type` | 64 caracteres | `400 invalid_request` |
+| Tamaño de `data` | 4 KB | `400 invalid_request` |
+| Eventos por lote | 100 | `413 batch_too_large` |
+| Eventos por sesión | 2000 | `409 session_full` |
+
+El límite por sesión mantiene acotado el tamaño de cada sesión en el servidor. Una actividad que necesite más eventos debe dividirse en varias sesiones.
+
 ## Errores
 
 Las respuestas de error tienen el formato:
@@ -197,11 +212,14 @@ Las respuestas de error tienen el formato:
 | `401` | `invalid_api_key` | Clave ausente o incorrecta | No reintenta |
 | `404` | `session_not_found` | La sesión no existe | No reintenta |
 | `409` | `session_finished` | Eventos enviados a una sesión cerrada | Descarta los eventos |
+| `409` | `session_full` | La sesión alcanzó el límite de eventos | Descarta los eventos |
 | `413` | `batch_too_large` | Más de 100 eventos en un lote | Divide el lote |
 | `429` | `rate_limited` | Demasiadas solicitudes | Reintenta más tarde |
 | `5xx` | `server_error` | Error del servidor | Reintenta más tarde |
 
 Los errores de red (sin respuesta) se tratan como `5xx`: el cliente conserva los eventos y reintenta.
+
+Ante un `409`, el cliente descarta los eventos cualquiera sea el `code`. Así, un cliente que no conoce un código nuevo de esa familia igual se comporta de forma correcta.
 
 ## Navegador (WebGL)
 
@@ -211,3 +229,10 @@ El servidor debe habilitar CORS para el dominio donde se publica la simulación,
 
 - **Cierre al cerrar la pestaña del navegador:** requiere un endpoint compatible con `navigator.sendBeacon`, que no permite encabezados personalizados.
 - **Vinculación de dispositivos:** endpoints para obtener las credenciales de un visor mediante un código.
+
+## Historial de cambios
+
+| Versión | Cambios |
+|---|---|
+| 1.1 | Límite de 2000 eventos por sesión, error `409 session_full`, campo `discarded` en la respuesta de eventos y sección [Límites](#límites). Compatible con clientes de la versión 1: las rutas siguen en `/v1`. |
+| 1 | Versión inicial. |
